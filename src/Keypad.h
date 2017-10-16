@@ -75,7 +75,7 @@ typedef struct {
 class Keypad : public Key {
 public:
 
-	Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols);
+	Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols, bool _suppressColumnVoltage = false);
 
 	virtual void pin_mode(byte pinNum, byte mode) { pinMode(pinNum, mode); }
 	virtual void pin_write(byte pinNum, boolean level) { digitalWrite(pinNum, level); }
@@ -98,6 +98,7 @@ public:
 	char waitForKey();
 	bool keyStateChanged();
 	byte numKeys();
+	bool getSCV() {return suppressColumnVoltage;}
 
 private:
 	unsigned long startTime;
@@ -108,6 +109,7 @@ private:
 	uint debounceTime;
 	uint holdTime;
 	bool single_key;
+	bool suppressColumnVoltage;
 
 	void scanKeys();
 	bool updateList();

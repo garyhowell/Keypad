@@ -32,11 +32,12 @@
 #include <Keypad.h>
 
 // <<constructor>> Allows custom keymap, pin configuration, and keypad sizes.
-Keypad::Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols) {
+Keypad::Keypad(char *userKeymap, byte *row, byte *col, byte numRows, byte numCols, bool _suppressColumnVoltage) {
 	rowPins = row;
 	columnPins = col;
 	sizeKpd.rows = numRows;
 	sizeKpd.columns = numCols;
+	suppressColumnVoltage = _suppressColumnVoltage;
 
 	begin(userKeymap);
 
@@ -88,14 +89,21 @@ void Keypad::scanKeys() {
 
 	// bitMap stores ALL the keys that are being pressed.
 	for (byte c=0; c<sizeKpd.columns; c++) {
-		pin_mode(columnPins[c],OUTPUT);
-		pin_write(columnPins[c], LOW);	// Begin column pulse output.
+		// Only apply column voltage if not suppressed
+		if (!suppressColumnVoltage) {
+			pin_mode(columnPins[c],OUTPUT);
+			pin_write(columnPins[c], LOW);	// Begin column pulse output.
+		}
+
 		for (byte r=0; r<sizeKpd.rows; r++) {
 			bitWrite(bitMap[r], c, !pin_read(rowPins[r]));  // keypress is active low so invert to high.
 		}
-		// Set pin to high impedance input. Effectively ends column pulse.
-		pin_write(columnPins[c],HIGH);
-		pin_mode(columnPins[c],INPUT);
+
+		if (!suppressColumnVoltage) {
+			// Set pin to high impedance input. Effectively ends column pulse.
+			pin_write(columnPins[c],HIGH);
+			pin_mode(columnPins[c],INPUT);
+		}
 	}
 }
 
@@ -266,6 +274,7 @@ void Keypad::transitionTo(byte idx, KeyState nextState) {
 
 /*
 || @changelog
+|| | 3.2 2017-10-16 - Gary Howell	   : Added suppresssion of column voltage to cater for keypads with single row, externally pulled up button, with common ground
 || | 3.1 2013-01-15 - Mark Stanley     : Fixed missing RELEASED & IDLE status when using a single key.
 || | 3.0 2012-07-12 - Mark Stanley     : Made library multi-keypress by default. (Backwards compatible)
 || | 3.0 2012-07-12 - Mark Stanley     : Modified pin functions to support Keypad_I2C
